@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basit RPG Oyunu</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .stats { margin-bottom: 20px; }
+        .stats div { margin: 5px 0; }
+        #log { background-color: #fff; border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: auto; margin-bottom: 20px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Basit RPG Oyunu</h1>
+    <div class="stats">
+        <div>Seviye: <span id="level">1</span></div>
+        <div>HP: <span id="hp">100</span>/100</div>
+        <div>ATK: <span id="atk">10</span></div>
+        <div>DEF: <span id="def">5</span></div>
+        <div>XP: <span id="xp">0</span>/100</div>
+    </div>
+    <div id="log"></div>
+    <button id="exploreBtn">Keşfe Çık</button>
+    <button id="attackBtn" disabled>Saldır</button>
+    <button id="healBtn" disabled>İksir Kullan (+20 HP)</button>
+
+    <script>
+        let player = {
+            level: 1,
+            hp: 100,
+            maxHp: 100,
+            atk: 10,
+            def: 5,
+            xp: 0
+        };
+
+        let enemy = null;
+
+        const levelElem = document.getElementById('level');
+        const hpElem = document.getElementById('hp');
+        const atkElem = document.getElementById('atk');
+        const defElem = document.getElementById('def');
+        const xpElem = document.getElementById('xp');
+        const logElem = document.getElementById('log');
+        const exploreBtn = document.getElementById('exploreBtn');
+        const attackBtn = document.getElementById('attackBtn');
+        const healBtn = document.getElementById('healBtn');
+
+        const enemies = [
+            { name: 'Sıçan', hp: 30, atk: 5, def: 2, xp: 20 },
+            { name: 'Goblin', hp: 50, atk: 8, def: 3, xp: 40 },
+            { name: 'Kurt', hp: 70, atk: 10, def: 4, xp: 60 }
+        ];
+
+        function updateStats() {
+            levelElem.textContent = player.level;
+            hpElem.textContent = `${player.hp}/${player.maxHp}`;
+            atkElem.textContent = player.atk;
+            defElem.textContent = player.def;
+            xpElem.textContent = `${player.xp}/100`;
+        }
+
+        function log(message) {
+            logElem.innerHTML = `<p>${message}</p>` + logElem.innerHTML;
+        }
+
+        function checkLevelUp() {
+            if (player.xp >= 100) {
+                player.xp -= 100;
+                player.level++;
+                player.maxHp += 20;
+                player.hp = player.maxHp;
+                player.atk += 5;
+                player.def += 2;
+                log(`Seviye atladın! Şimdi Seviye ${player.level}`);
+                updateStats();
+            }
+        }
+
+        function generateEnemy() {
+            const randomIndex = Math.floor(Math.random() * enemies.length);
+            return { ...enemies[randomIndex] };
+        }
+
+        function attack() {
+            if (!enemy) return;
+            const damage = Math.max(0, player.atk - enemy.def);
+            enemy.hp -= damage;
+            log(`${player.level} Seviye oyuncu → ${enemy.name}: ${damage} hasar`);
+            if (enemy.hp <= 0) {
+                log(`${enemy.name} yenildi! XP kazandın.`);
+                player.xp += enemy.xp;
+                checkLevelUp();
+                enemy = null;
+                attackBtn.disabled = true;
+                healBtn.disabled = true;
+            } else {
+                enemyTurn();
+            }
+            updateStats();
+        }
+
+        function enemyTurn() {
+            const damage = Math.max(0, enemy.atk - player.def);
+            player.hp -= damage;
+            log(`${enemy.name} → ${player.level} Seviye oyuncu: ${damage} hasar`);
+            if (player.hp <= 0) {
+                log(`${player.level} Seviye oyuncu yenildi!`);
+                player.hp = player.maxHp;
+                player.xp = 0;
+                attackBtn.disabled = true;
+                healBtn.disabled = true;
+            }
+            updateStats();
+        }
+
+        function heal() {
+            if (!enemy) return;
+            player.hp = Math.min(player.maxHp, player.hp + 20);
+            log(`İksir kullandın: +20 HP`);
+            enemyTurn();
+            updateStats();
+        }
+
+        exploreBtn.addEventListener('click', () => {
+            if (enemy) {
+                log('Önce mevcut düşmanı yenmelisin!');
+                return;
+            }
+            enemy = generateEnemy();
+            log(`${enemy.name} ortaya çıktı!`);
+            attackBtn.disabled = false;
+            healBtn.disabled = false;
+        });
+
+        attackBtn.addEventListener('click', attack);
+        healBtn.addEventListener('click', heal);
+
+        updateStats();
+    </script>
+</body>
+</html>
